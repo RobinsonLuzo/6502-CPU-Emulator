@@ -87,6 +87,7 @@ struct CPU {
         INS_LDA_ZP = 0xA5; // Load Accumulator - zero page:
 
 
+    // Set zero and exit flags:
     void LDASetStatus() {
         Z = (A == 0);               // Zeros reg set if A=0
         N = (A & 0b10000000) > 0;   // Negative flag set if 7th bit of A is set
@@ -100,17 +101,21 @@ struct CPU {
             // fetch next instruction from memory
             Byte Ins = FetchByte(Cycles, memory);
             switch (Ins) {
+
                 case INS_LDA_IM: {
                     //printf("Switched! %d \n", Ins);
                     Byte Value = FetchByte(Cycles, memory);
-                    A = Value;                  // Set A register
+                    A = Value;      // Set A register
                     LDASetStatus();
                 } break;
+
                 case INS_LDA_ZP: {
+                    printf("Load State: %d \n", Ins);
                     Byte ZeroPageAddress = FetchByte(Cycles, memory);
                     A = ReadByte(Cycles, ZeroPageAddress, memory);
                     LDASetStatus();
                 } break;
+
                 default: {
                     printf("Instruction not handled %d", Ins);
                 } break;
@@ -129,10 +134,11 @@ int main() {
     CPU cpu;
     cpu.Reset(mem);
     // Start - a little inline program
-    mem[0xFFFC] = CPU::INS_LDA_IM;
+    mem[0xFFFC] = CPU::INS_LDA_ZP;  // Load from zero page
     mem[0xFFFD] = 0x42;
+    mem[0x0042] = 0x84; // Stick 84 in the address
     // end - a little inline program
-    cpu.Execute(2, mem);
+    cpu.Execute(3, mem);
 
     printf("Hello Everyone");
     return 0;

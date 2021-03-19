@@ -25,12 +25,12 @@ An inital boot sequence is made for these.
 
 Secondly, we need memory. This is straighforward enough: 1024 * 64 is the max we can have. Create a method to initialise this on startup to all 0s.
 
-For each tick of the clock we execute a CPU instruction. These [instructions](http://www.obelisk.me.uk/6502/instructions.html) are straighforward enough.
+For each tick of the clock we execute a CPU instruction. These [instructions](http://www.obelisk.me.uk/6502/instructions.html) are straighforward enough, though time consuming to implement.
 
 
 
 This C++ project uses Visual Studio Code with GCC compiler (g++) and GDB debugger from mingw-w64. [Info](https://code.visualstudio.com/docs/cpp/config-mingw)
 
 ## Sources:
-[6502 Wiki](https://en.wikipedia.org/wiki/MOS_Technology_6502)
-[6502 Architecture](http://www.obelisk.me.uk/6502/index.html)
+- [6502 Wiki](https://en.wikipedia.org/wiki/MOS_Technology_6502)
+- [6502 Architecture](http://www.obelisk.me.uk/6502/index.html)

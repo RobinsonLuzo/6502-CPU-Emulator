@@ -66,16 +66,31 @@ struct CPU {
     // retrieve instruction byte
     Byte FetchByte(u32& Cycles, Mem& memory) {
         // Go to memory and take the next byte from wherever Program Counter tells us
-        Byte Data = memory[PC];
-        PC++;                   
+        Byte Data = memory[PC]; 
+        PC++;                  
         Cycles--;   // Move on to next step
+        return Data;
+    }
+
+    // read instruction byte
+    Byte ReadByte(u32& Cycles, Byte Address, Mem& memory) {
+        // As no code is being executed no need to increment Program Counter
+        // Go straight to given address location
+        Byte Data = memory[Address];
+        Cycles--;
         return Data;
     }
 
     // Opcodes:
     static constexpr Byte
-        // Load Accumulator - immediate:
-        INS_LDA_IM = 0xA9;
+        INS_LDA_IM = 0xA9, // Load Accumulator - immediate:
+        INS_LDA_ZP = 0xA5; // Load Accumulator - zero page:
+
+
+    void LDASetStatus() {
+        Z = (A == 0);               // Zeros reg set if A=0
+        N = (A & 0b10000000) > 0;   // Negative flag set if 7th bit of A is set
+    }
 
 
     // execute instructions for given number of clock ticks
@@ -86,11 +101,15 @@ struct CPU {
             Byte Ins = FetchByte(Cycles, memory);
             switch (Ins) {
                 case INS_LDA_IM: {
-                    printf("Switched! %d \n", Ins);
-                    Byte value = FetchByte(Cycles, memory);
-                    A = value;                  // Set A register
-                    Z = (A == 0);               // Zeros reg set if A=0
-                    N = (A & 0b10000000) > 0;   // Negative flag set if 7th bit of A is set
+                    //printf("Switched! %d \n", Ins);
+                    Byte Value = FetchByte(Cycles, memory);
+                    A = Value;                  // Set A register
+                    LDASetStatus();
+                } break;
+                case INS_LDA_ZP: {
+                    Byte ZeroPageAddress = FetchByte(Cycles, memory);
+                    A = ReadByte(Cycles, ZeroPageAddress, memory);
+                    LDASetStatus();
                 } break;
                 default: {
                     printf("Instruction not handled %d", Ins);

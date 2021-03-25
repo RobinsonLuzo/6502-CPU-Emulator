@@ -30,6 +30,12 @@ struct Mem {
         return Data[Address];
     }
 
+    // Write 2 bytes:
+    void WriteWord(Word Value, u32 Address) {
+        Data[Address]     = Value & 0xFF;
+        Data[Address + 1] = (Value >> 8);
+    }
+
 };
 
 
@@ -72,6 +78,19 @@ struct CPU {
         return Data;
     }
 
+    // Fetch a 16 bit word from wherever the program counter is:
+    Word FetchWord(u32& Cycles, Mem& memory) {
+        Word Data = memory[PC]; // First byte read
+        PC++;                  
+
+        // 6502 is little endian so 2nd read matters most
+        // Ref: https://stackoverflow.com/questions/29874246/6502-and-little-endian-conversion
+        Data |= (memory[PC] << 8); // 2nd byte read - shift up by 8 bytes
+        PC++;                  
+        Cycles+=2;
+        return Data;
+    }
+
     // read instruction byte
     Byte ReadByte(u32& Cycles, Byte Address, Mem& memory) {
         // As no code is being executed no need to increment Program Counter
@@ -83,8 +102,10 @@ struct CPU {
 
     // Opcodes:
     static constexpr Byte
-        INS_LDA_IM = 0xA9, // Load Accumulator - immediate:
-        INS_LDA_ZP = 0xA5; // Load Accumulator - zero page:
+        INS_LDA_IM  = 0xA9, // Load Accumulator - immediate:
+        INS_LDA_ZP  = 0xA5, // Load Accumulator - zero page:
+        INS_LDA_ZPX = 0xB5, // Zero page X - http://www.obelisk.me.uk/6502/addressing.html
+        INS_JSR     = 0x20; // Jump to subroutine (16 bit) - http://www.obelisk.me.uk/6502/reference.html#JSR
 
 
     // Set zero and exit flags:
@@ -110,10 +131,31 @@ struct CPU {
                 } break;
 
                 case INS_LDA_ZP: {
-                    printf("Load State: %d \n", Ins);
+                    //printf("Load State: %d \n", Ins);
                     Byte ZeroPageAddress = FetchByte(Cycles, memory);
                     A = ReadByte(Cycles, ZeroPageAddress, memory);
                     LDASetStatus();
+                } break;
+
+                // Note: no address overflow protection!!!
+                case INS_LDA_ZPX: {
+                    //printf("Load X State: %d \n", Ins);
+                    Byte ZeroPageAddress = FetchByte(Cycles, memory);
+                    ZeroPageAddress += X;
+                    Cycles--;
+                    A = ReadByte(Cycles, ZeroPageAddress, memory);
+                    LDASetStatus();
+                } break;
+
+                case INS_JSR: {
+                    //printf("Jump: %d \n", Ins);
+                    Word SubAddr = FetchWord(Cycles, memory); // subroutine address
+                    // Push (address -1) onto the stack
+                    memory[SP] = PC - 1; // Stack pointer - program counter positon -1
+                    Cycles--;
+                    // Set Program Counter to memory address:
+                    PC = SubAddr;
+                    Cycles--;
                 } break;
 
                 default: {
